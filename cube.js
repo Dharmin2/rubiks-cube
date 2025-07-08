@@ -397,6 +397,7 @@ function updateUndoRedoButtons() {
     redoBtn.disabled = redoStack.length === 0;
 }
 
+
 function handleDragStart(e) {
   e.preventDefault();
   isDragging = true;
@@ -448,6 +449,40 @@ function handleDragEnd(e) {
   }
 }
 
+// Array of background image file names (stored in 'images' folder)
+const bgImages = [
+  "background1.jpg",
+  "background2.jpg",
+  "background3.jpg",
+  "background4.jpg",
+  "background5.jpg",
+  "background6.jpg",
+  "background7.jpg",
+  "background8.jpg"
+];
+
+let currentBgIndex = 0;
+
+function setBackground(index) {
+  const imageUrl = `assets/${bgImages[index]}`;
+  document.body.style.backgroundImage = `url('${imageUrl}')`;
+  document.body.style.backgroundSize = "cover";
+  document.body.style.backgroundPosition = "center";
+  document.body.style.backgroundRepeat = "no-repeat";
+}
+
+// Button handlers
+document.getElementById("prev-bg").onclick = () => {
+  currentBgIndex = (currentBgIndex - 1 + bgImages.length) % bgImages.length;
+  setBackground(currentBgIndex);
+};
+
+document.getElementById("next-bg").onclick = () => {
+  currentBgIndex = (currentBgIndex + 1) % bgImages.length;
+  setBackground(currentBgIndex);
+};
+
+setBackground(currentBgIndex);
 document.querySelector(".generate").onclick = generate;
 document.querySelector(".reset").onclick = resetColor;
 document.querySelector(".view").onclick = changeView;
