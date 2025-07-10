@@ -163,14 +163,16 @@ function generate() {
   document.getElementById("seq").textContent = sequence;
 
   scrambleStartTime = Date.now();
+  document.getElementById("timer").textContent = "Time: 0s | Score: 1000";
   if (timerInterval) {
     clearInterval(timerInterval);
   }
 
-    timerInterval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - scrambleStartTime) / 1000);
-        document.getElementById("timer").textContent = `Time: ${elapsed}s`;
-    }, 1000);
+  timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - scrambleStartTime) / 1000);
+    const score = calculateScore(elapsed);
+    document.getElementById("timer").textContent = `Time: ${elapsed}s | Score: ${score}`;
+  }, 1000);
 }
 let stateArray =
   //left,up,right,down
@@ -220,6 +222,7 @@ function changeView() {
 function resetColor(skipSound=false) {
   if(!skipSound) playSound('reset',0.2);
   stopTimer();
+  document.getElementById("timer").textContent = "Time: 0s | Score: 1000";
   for (let i = 0; i < 6; i++) {
     let pieces = document.querySelectorAll("." + direction[i] + " .part");
     for (let j = 0; j < 18; j++) {
