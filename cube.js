@@ -547,8 +547,6 @@ function stopTimer() {
     timerInterval = null;
 
     const elapsed = Math.floor((Date.now() - scrambleStartTime) / 1000);
-    const score = calculateScore(elapsed);
-    document.getElementById("timer").textContent += ` | Score: ${score}`;
   }
 }
 
