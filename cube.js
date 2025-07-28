@@ -14,6 +14,8 @@ let isDragging = false;
 let startX, startY;
 let scrambleStartTime;
 let timerInterval;
+let savedMoveCount = null;
+
 ///////////////////////////////////
 
 let direction = ["right", "left", "up", "down", "front", "back"];
@@ -357,14 +359,16 @@ document.querySelectorAll(".cube-turn").forEach((element) => {
 });
 
 function recordMove(move, isPrime) {
-  // A new move is made, so we push it to the undo stack.
   undoStack.push({ move: move, isPrime: isPrime });
-  
-  // Any new move invalidates the previous "redo" history.
   redoStack = [];
+
+  if (savedMoveCount !== null) {
+    savedMoveCount++;
+  }
 
   updateUndoRedoButtons();
 }
+
 
 
 function undoMove() {
@@ -529,6 +533,26 @@ document.querySelector(".stop-animation").onclick = stopAnimation;
 document.querySelector(".undo-btn").onclick = undoMove;
 document.querySelector(".redo-btn").onclick = redoMove;
 
+document.querySelector(".save-btn").onclick = () => {
+  savedMoveCount = 0;
+  console.log("Position saved.");
+};
+
+document.querySelector(".load-btn").onclick = () => {
+  if (savedMoveCount === null) {
+    alert("No position has been saved!");
+    return;
+  }
+
+  for (let i = 0; i < savedMoveCount; i++) {
+    undoMove();
+  }
+
+  savedMoveCount = 0;
+  console.log("Position restored.");
+};
+
+
 // Listen for mouse events
 document.body.addEventListener('mousedown', handleDragStart);
 document.body.addEventListener('mousemove', handleDragMove);
@@ -539,6 +563,7 @@ document.body.addEventListener('mouseleave', handleDragEnd); // In case mouse le
 document.body.addEventListener('touchstart', handleDragStart, { passive: false });
 document.body.addEventListener('touchmove', handleDragMove, { passive: false });
 document.body.addEventListener('touchend', handleDragEnd);
+
 
 
 function stopTimer() {
