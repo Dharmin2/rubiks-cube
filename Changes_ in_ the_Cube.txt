@@ -49,3 +49,30 @@ cubeparts.css, planeparts.css: made the colors of the cube more attractive and g
 
 Sound Effects
 To add sound, changes are made in the cube.js file. A sound object is made to hold audio instances for each sound type. A reusable function ‘playSound’ is made that plays any registered sound type with optional volume control. This function prevents overlapping sounds by resetting playback(currentTime = 0). This function is used in faceTurn(), faceTurnPrime(), cubeTurn(), generate(), resetColor(), and changeView() to play the audio when these functions are triggered. In the function generate(), resetColor(true) skips the reset sound (true argument disables it). This prevents the two sounds, reset and scramble, from playing together
+
+
+George Halim:
+Fixed Timer
+Added Shuffle feature
+celebration message when cube is solved
+
+cube.js
+New:
+A function to start the timer when the player makes their first move
+A function to stop the timer when the cube is solved
+A function to check if the cube is solved by looking at the colors
+A function to show a celebration popup when the cube is solved
+A function to hide the celebration popup
+A new shuffle function that randomly mixes the cube
+A keyboard shortcut "S" for the shuffle function
+
+Modified:
+the main turn function to start the timer on the first move and check if the cube is solved
+the scramble generation to reset the timer instead of starting it immediately
+the reset function to properly reset all the timer tracking variables
+Added timer reset when changing backgrounds
+
+index.html
+New:
+celebration popup when the cube is solved
+new "Shuffle" button in the interface
