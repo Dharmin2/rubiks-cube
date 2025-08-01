@@ -14,6 +14,9 @@ let isDragging = false;
 let startX, startY;
 let scrambleStartTime;
 let timerInterval;
+let isTimerRunning = false;
+let hasStartedSolving = false;
+let hasBeenSolved = false;
 let savedMoveCount = null;
 
 ///////////////////////////////////
@@ -33,7 +36,68 @@ let direction_index = new Map();
 for (let i = 0; i < 6; i++) {
   direction_index.set(direction[i][0], i);
 }
+function startTimer() {
+  if (!isTimerRunning) {
+    isTimerRunning = true;
+    scrambleStartTime = Date.now();
+    timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - scrambleStartTime) / 1000);
+      const score = calculateScore(elapsed);
+      document.getElementById("timer").textContent = `Time: ${elapsed}s | Score: ${score}`;
+    }, 1000);
+  }
+}
+
+function hideSolvedNotification() {
+  const notification = document.getElementById('solved-notification');
+  notification.style.display = 'none';
+}
+
+function showSolvedNotification() {
+  const notification = document.getElementById('solved-notification');
+  notification.style.display = 'block';
+  
+  // Hide the notification after 3 seconds
+  setTimeout(() => {
+    notification.style.display = 'none';
+  }, 3000);
+}
+
+// function testSolve() {
+//   // Simulate solving the cube by setting hasBeenSolved to true
+//   console.log("Test: Simulating cube solve");
+//   hasBeenSolved = true;
+//   stopTimer();
+//   showSolvedNotification();
+// }
+
+function checkIfSolved() {
+  // Check each face to see if all pieces are the same color
+  for (let i = 0; i < 6; i++) {
+    let pieces = document.querySelectorAll("." + direction[i] + " .part");
+    if (pieces.length === 0) continue;
+    
+    // Get the color of the first piece on this face
+    const firstColor = getComputedStyle(pieces[0]).getPropertyValue("background-color").replace(/\s+/g, '');
+    
+    // Check if all pieces on this face have the same color
+    for (let j = 1; j < pieces.length; j++) {
+      const pieceColor = getComputedStyle(pieces[j]).getPropertyValue("background-color").replace(/\s+/g, '');
+      if (pieceColor !== firstColor) {
+        return false; // Not solved - found different colors on same face
+      }
+    }
+  }
+  return true; // All faces are uniform colors
+}
+
 function turn(index, face) {
+  // Start timer on first move if not already started and cube hasn't been solved yet
+  if (!hasStartedSolving && !isTimerRunning && !hasBeenSolved) {
+    hasStartedSolving = true;
+    startTimer();
+  }
+
   let faceColorArray = [];
   for (let i = 0; i < 8; i++) {
     let currentElement = document.getElementById(face + faceArray[i]);
@@ -64,24 +128,15 @@ function turn(index, face) {
     document.getElementById("x" + sideArray[index][i]).style.backgroundColor =
         sideColorArray[(i + 3) % 12];
   }
-// Check if cube is solved
-  let isSolved = true;
-  for (let i = 0; i < 6; i++) {
-    let pieces = document.querySelectorAll("." + direction[i] + " .part");
-    for (let j = 0; j < 18; j++) {
-      // Normalize both actual and expected color strings (remove all whitespace)
-      const actual = getComputedStyle(pieces[j]).getPropertyValue("background-color").replace(/\s+/g, '');
-      const expected = mainColor[i].replace(/\s+/g, '');
-      if (actual !== expected) {
-        isSolved = false;
-        break;
-      }
-    }
-    if (!isSolved) break;
-  }
-
-  if (isSolved) {
+  
+  // Check if cube is solved after the move
+  if (checkIfSolved()) {
     stopTimer();
+    // Only mark as solved if the user has been solving (not during scramble generation)
+    if (hasStartedSolving) {
+      hasBeenSolved = true; // Mark that the cube has been solved
+      showSolvedNotification(); // Show notification
+    }
   }
 }
 let translationMatrix = [
@@ -164,18 +219,30 @@ function generate() {
   }
   document.getElementById("seq").textContent = sequence;
 
-  scrambleStartTime = Date.now();
+  // Reset timer state for new scramble
   document.getElementById("timer").textContent = "Time: 0s | Score: 1000";
-  if (timerInterval) {
-    clearInterval(timerInterval);
-  }
-
-  timerInterval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - scrambleStartTime) / 1000);
-    const score = calculateScore(elapsed);
-    document.getElementById("timer").textContent = `Time: ${elapsed}s | Score: ${score}`;
-  }, 1000);
+  hasStartedSolving = false;
+  hasBeenSolved = false;
+  hideSolvedNotification();
 }
+
+function shuffle() {
+  playSound('scramble', 0.7);
+  resetColor(true);
+  
+  // Perform random moves to shuffle the cube
+  for (let i = 0; i < 20; i++) {
+    let x = Math.floor(Math.random() * 6);
+    turn(x, direction[x][0]);
+  }
+  
+  // Reset timer state for new shuffle
+  document.getElementById("timer").textContent = "Time: 0s | Score: 1000";
+  hasStartedSolving = false;
+  hasBeenSolved = false;
+  hideSolvedNotification();
+}
+
 let stateArray =
   //left,up,right,down
   [
@@ -225,21 +292,9 @@ function resetColor(skipSound=false) {
   if(!skipSound) playSound('reset',0.2);
   stopTimer();
   document.getElementById("timer").textContent = "Time: 0s | Score: 1000";
-  for (let i = 0; i < 6; i++) {
-    let pieces = document.querySelectorAll("." + direction[i] + " .part");
-    for (let j = 0; j < 18; j++) {
-      pieces[j].style.backgroundColor = mainColor[i];
-    }
-    undoStack = [];
-    redoStack = [];
-    updateUndoRedoButtons();
-  }
-  document.getElementById("seq").innerHTML = "&nbsp;";
-  let cube = document.querySelector(".cube");
-  cube.classList.remove(currentClass);
-  currentClass = "s23";
-  cube.classList.add(currentClass);
-  currentState = 1;
+  hasStartedSolving = false;
+  hasBeenSolved = false;
+  hideSolvedNotification();
 }
 let continueAnimation = 0;
 function startAnimation() {
@@ -278,7 +333,6 @@ function stopAnimation() {
 }
 
 function checkKeyboardEventKey(eventKey, eventKeyCode, isCtrlPressed= false ) {
-  console.log({ eventKey, eventKeyCode,isCtrlPressed });
   if (isCtrlPressed) {
     if (eventKey.toLowerCase() === 'z') {
       undoMove();
@@ -309,6 +363,12 @@ function checkKeyboardEventKey(eventKey, eventKeyCode, isCtrlPressed= false ) {
     case "g":
       generate();
       break;
+    case "s":
+      shuffle();
+      break;
+    // case "t":
+    //   testSolve();
+    //   break;
     case "z":
       resetColor();
       break;
@@ -373,7 +433,6 @@ function recordMove(move, isPrime) {
 
 function undoMove() {
   if (undoStack.length === 0) {
-    console.log("Nothing to undo.");
     return; // Nothing to undo
   }
 
@@ -399,7 +458,6 @@ function undoMove() {
 
 function redoMove() {
   if (redoStack.length === 0) {
-    console.log("Nothing to redo.");
     return; // Nothing to redo
   }
 
@@ -514,15 +572,18 @@ function setBackground(index) {
 document.getElementById("prev-bg").onclick = () => {
   currentBgIndex = (currentBgIndex - 1 + bgImages.length) % bgImages.length;
   setBackground(currentBgIndex);
+  resetColor(); // Reset game and timer when background changes
 };
 
 document.getElementById("next-bg").onclick = () => {
   currentBgIndex = (currentBgIndex + 1) % bgImages.length;
   setBackground(currentBgIndex);
+  resetColor(); // Reset game and timer when background changes
 };
 
 setBackground(currentBgIndex);
 document.querySelector(".generate").onclick = generate;
+document.querySelector(".shuffle").onclick = shuffle;
 document.querySelector(".reset").onclick = resetColor;
 document.querySelector(".view").onclick = changeView;
 document.querySelector(".start-animation").onclick = () =>
@@ -570,8 +631,7 @@ function stopTimer() {
   if (timerInterval) {
     clearInterval(timerInterval);
     timerInterval = null;
-
-    const elapsed = Math.floor((Date.now() - scrambleStartTime) / 1000);
+    isTimerRunning = false;
   }
 }
 
